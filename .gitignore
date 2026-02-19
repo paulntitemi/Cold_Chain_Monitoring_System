@@ -11,19 +11,24 @@ ENV/
 dist/
 build/
 
-# AWS Credentials & Certificates
+# AWS Credentials & Certificates (NEVER COMMIT!)
 *.pem
 *.crt
 *.key
 *.p12
 credentials
 .aws/
+esp32/certificates/**/private*.key
+esp32/certificates/**/*.pem.crt
+esp32/certificates/**/*.pem.key
+esp32/certificates/**/AmazonRootCA*.pem
+infrastructure/esp32/certificates/**/*.pem.key
+infrastructure/esp32/certificates/**/*.pem.crt
 
 # Environment Variables
 .env
 .env.local
 .env.production
-*.env
 
 # IDE
 .vscode/
@@ -31,7 +36,10 @@ credentials
 *.swp
 *.swo
 *~
+
+# OS
 .DS_Store
+Thumbs.db
 
 # Logs
 *.log
@@ -48,10 +56,11 @@ package-lock.json
 *.sqlite3
 
 # Terraform
-.terraform/
+**/.terraform/
 *.tfstate
 *.tfstate.*
-*.tfvars
+.terraform.lock.hcl
+terraform.tfvars
 
 # Docker
 docker-compose.override.yml
@@ -63,7 +72,7 @@ htmlcov/
 .tox/
 
 # Lambda Deployment Packages
-*.zip
+terraform/lambda_packages/*.zip
 lambda_package/
 
 # InfluxDB Data
@@ -77,11 +86,7 @@ tmp/
 temp/
 *.tmp
 
-# OS
-Thumbs.db
-.DS_Store
-
-# Certificates (keep templates, ignore actual certs)
+# Certificates directory (keep templates/READMEs, ignore actual certs)
 certificates/*.crt
 certificates/*.key
 certificates/*.pem
@@ -91,3 +96,18 @@ certificates/*.pem
 config/*.env
 !config/.env.example
 !config/docker-compose.yml
+
+# ML Models (keep code, ignore large model files)
+ml-models/*.pkl
+ml-models/*.h5
+ml-models/*.pt
+
+# Frontend build artifacts
+frontend/web/build/
+frontend/web/node_modules/
+frontend/mobile/ios/Pods/
+frontend/mobile/android/.gradle/
+frontend/mobile/node_modules/
+
+# Deployment outputs
+deployment-outputs.json

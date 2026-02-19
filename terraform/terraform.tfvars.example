@@ -1,0 +1,33 @@
+# =============================================================================
+# ColdTrack Cold Chain Monitoring System - Example Variable Values
+# =============================================================================
+# Copy this file to terraform.tfvars and fill in your actual values.
+# IMPORTANT: Never commit terraform.tfvars to version control.
+# =============================================================================
+
+# General Configuration
+aws_region   = "eu-west-1"
+environment  = "development"
+project_name = "coldtrack"
+
+# IoT / Sensor Configuration
+sensor_count = 10
+
+# Temperature Thresholds (Celsius) - WHO vaccine storage guidelines
+temp_min         = 2.0
+temp_max         = 8.0
+freeze_threshold = 0.0
+
+# Alert Configuration
+alert_email = "your-email@example.com"
+alert_phone = "+27821234567"    # E.164 format. Leave as "" to disable SMS alerts.
+
+# Lambda Configuration
+lambda_timeout = 30
+lambda_memory  = 256
+
+# InfluxDB Configuration
+influx_url    = "http://localhost:8086"
+influx_token  = "your-influxdb-token-here"
+influx_org    = "coldtrack"
+influx_bucket = "sensors"
