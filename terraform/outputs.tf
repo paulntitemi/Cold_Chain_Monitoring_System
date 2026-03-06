@@ -47,10 +47,38 @@ output "s3_bucket_name" {
   value       = aws_s3_bucket.lambda_packages.id
 }
 
+output "s3_raw_data_bucket" {
+  description = "Name of the S3 bucket for raw telemetry data and ML training datasets"
+  value       = aws_s3_bucket.raw_data.id
+}
+
+output "s3_ml_models_bucket" {
+  description = "Name of the S3 bucket for ML model artifacts"
+  value       = aws_s3_bucket.ml_models.id
+}
+
+# -----------------------------------------------------------------------------
+# Kinesis Firehose
+# -----------------------------------------------------------------------------
+output "firehose_stream_name" {
+  description = "Name of the Kinesis Firehose delivery stream (IoT → S3)"
+  value       = aws_kinesis_firehose_delivery_stream.telemetry_to_s3.name
+}
+
+output "firehose_stream_arn" {
+  description = "ARN of the Kinesis Firehose delivery stream"
+  value       = aws_kinesis_firehose_delivery_stream.telemetry_to_s3.arn
+}
+
 # -----------------------------------------------------------------------------
 # Timestream
 # -----------------------------------------------------------------------------
 output "timestream_database_name" {
   description = "Name of the Timestream database for telemetry data"
   value       = aws_timestreamwrite_database.telemetry.database_name
+}
+
+output "timestream_table_name" {
+  description = "Name of the Timestream table for sensor readings"
+  value       = aws_timestreamwrite_table.sensor_data.table_name
 }

@@ -156,6 +156,10 @@ def lambda_handler(event, context):
 def _extract_telemetry(event):
     """Parse and validate telemetry fields from the incoming IoT event.
 
+    Supports two message formats:
+    - Flat (test script):  {"temperature": 5.2, "humidity": 65.0, "battery": 87.0, ...}
+    - Nested (simulator):  {"sensors": {"temperature": 5.2}, "power": {"battery_percent": 96.5}, ...}
+
     Parameters
     ----------
     event : dict
@@ -170,15 +174,40 @@ def _extract_telemetry(event):
     if not device_id:
         raise KeyError("device_id")
 
+    # Nested sub-objects (simulator format)
+    sensors = event.get("sensors", {})
+    power = event.get("power", {})
+    connectivity = event.get("connectivity", {})
+    location = event.get("location", {})
+
+    # Each field falls back from nested → flat → default
+    temperature = float(sensors.get("temperature", event.get("temperature", 0)))
+    humidity = float(sensors.get("humidity", event.get("humidity", 0)))
+    battery = float(power.get("battery_percent", event.get("battery", 100)))
+    rssi = int(connectivity.get("rssi_dbm", event.get("rssi", 0)))
+    latitude = location.get("latitude", event.get("latitude"))
+    longitude = location.get("longitude", event.get("longitude"))
+
+    # Timestamp: simulator sends epoch_ms, test script sends epoch seconds
+    epoch_ms = event.get("epoch_ms")
+    if epoch_ms:
+        timestamp = int(epoch_ms) // 1000
+    else:
+        raw_ts = event.get("timestamp", int(time.time()))
+        try:
+            timestamp = int(raw_ts)
+        except (ValueError, TypeError):
+            timestamp = int(time.time())
+
     return {
         "device_id": str(device_id),
-        "temperature": float(event.get("temperature", 0)),
-        "humidity": float(event.get("humidity", 0)),
-        "battery": float(event.get("battery", 100)),
-        "timestamp": int(event.get("timestamp", int(time.time()))),
-        "latitude": event.get("latitude"),
-        "longitude": event.get("longitude"),
-        "rssi": int(event.get("rssi", 0)),
+        "temperature": temperature,
+        "humidity": humidity,
+        "battery": battery,
+        "timestamp": timestamp,
+        "latitude": latitude,
+        "longitude": longitude,
+        "rssi": rssi,
     }
 
 

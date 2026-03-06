@@ -134,7 +134,7 @@ resource "aws_lambda_function" "process_violation" {
       TEMP_MAX             = tostring(var.temp_max)
       FREEZE_THRESHOLD     = tostring(var.freeze_threshold)
       SNS_TOPIC_ARN        = aws_sns_topic.critical_alerts.arn
-      TIMESTREAM_DATABASE  = aws_timestreamwrite_database.telemetry.database_name
+      TIMESTREAM_DB        = aws_timestreamwrite_database.telemetry.database_name
       TIMESTREAM_TABLE     = aws_timestreamwrite_table.sensor_data.table_name
       INFLUX_URL           = var.influx_url
       INFLUX_TOKEN         = var.influx_token
@@ -170,7 +170,7 @@ resource "aws_lambda_function" "predictive_analytics" {
       TEMP_MAX             = tostring(var.temp_max)
       FREEZE_THRESHOLD     = tostring(var.freeze_threshold)
       SNS_TOPIC_ARN        = aws_sns_topic.critical_alerts.arn
-      TIMESTREAM_DATABASE  = aws_timestreamwrite_database.telemetry.database_name
+      TIMESTREAM_DB        = aws_timestreamwrite_database.telemetry.database_name
       TIMESTREAM_TABLE     = aws_timestreamwrite_table.sensor_data.table_name
       INFLUX_URL           = var.influx_url
       INFLUX_TOKEN         = var.influx_token
@@ -202,7 +202,7 @@ resource "aws_lambda_function" "blockchain_logger" {
     variables = {
       PROJECT_NAME         = var.project_name
       ENVIRONMENT          = var.environment
-      TIMESTREAM_DATABASE  = aws_timestreamwrite_database.telemetry.database_name
+      TIMESTREAM_DB        = aws_timestreamwrite_database.telemetry.database_name
       TIMESTREAM_TABLE     = aws_timestreamwrite_table.sensor_data.table_name
       INFLUX_URL           = var.influx_url
       INFLUX_TOKEN         = var.influx_token
@@ -239,7 +239,7 @@ resource "aws_lambda_function" "api_handler" {
       FREEZE_THRESHOLD     = tostring(var.freeze_threshold)
       IOT_ENDPOINT         = data.aws_iot_endpoint.current.endpoint_address
       SNS_TOPIC_ARN        = aws_sns_topic.critical_alerts.arn
-      TIMESTREAM_DATABASE  = aws_timestreamwrite_database.telemetry.database_name
+      TIMESTREAM_DB        = aws_timestreamwrite_database.telemetry.database_name
       TIMESTREAM_TABLE     = aws_timestreamwrite_table.sensor_data.table_name
       INFLUX_URL           = var.influx_url
       INFLUX_TOKEN         = var.influx_token
