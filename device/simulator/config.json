@@ -1,6 +1,6 @@
 {
   "device_id": "CT-001",
-  "mqtt_endpoint": "REPLACE_WITH_YOUR_IOT_ENDPOINT",
+  "mqtt_endpoint": "amfou4arkp5l-ats.iot.eu-west-2.amazonaws.com",
   "topic_prefix": "coldtrack/sensors",
   "publish_interval": 60,
   "temp_range": [2.0, 8.0],

@@ -74,6 +74,14 @@ htmlcov/
 # Lambda Deployment Packages
 terraform/lambda_packages/*.zip
 lambda_package/
+lambda_influx_writer/package/
+lambda_influx_writer/*.zip
+
+# AWS IoT generated metadata
+certificates/*.txt
+
+# Local simulator backup/config artifacts
+device/simulator/*.bak
 
 # InfluxDB Data
 influxdb-data/
