@@ -1,30 +1,47 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:coldtrack/services/risk_engine.dart';
+import 'package:coldtrack/models/sensor_reading.dart';
+import 'package:coldtrack/theme/app_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:coldtrack/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('RiskEngine', () {
+    const engine = RiskEngine();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    SensorReading read(double t) => SensorReading(
+          deviceId: 'test',
+          timestamp: DateTime.now().toUtc(),
+          temperature: t,
+        );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('safe temperature with no excursion → LOW', () {
+      final a = engine.assess(
+          reading: read(5.0), durationOutsideRangeSeconds: 0);
+      expect(a.level, RiskLevel.low);
+      expect(a.riskScore, 0.0);
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('above safe max and 15 minutes excursion → MEDIUM or worse', () {
+      final a = engine.assess(
+          reading: read(10.0), durationOutsideRangeSeconds: 15 * 60);
+      expect(a.level.index >= RiskLevel.medium.index, true);
+    });
+
+    test('hot and long excursion → CRITICAL', () {
+      final a = engine.assess(
+          reading: read(14.0), durationOutsideRangeSeconds: 40 * 60);
+      expect(a.level, RiskLevel.critical);
+    });
+
+    test('below freezing → deviation contributes', () {
+      final a = engine.assess(
+          reading: read(-2.0), durationOutsideRangeSeconds: 0);
+      expect(a.riskScore > 0, true);
+    });
+
+    test('remaining safe minutes decreases with excursion time', () {
+      final a = engine.assess(
+          reading: read(10.0), durationOutsideRangeSeconds: 10 * 60);
+      expect(a.remainingSafeMinutes < 30, true);
+    });
   });
 }

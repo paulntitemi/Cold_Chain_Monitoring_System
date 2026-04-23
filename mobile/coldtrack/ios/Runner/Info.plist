@@ -45,5 +45,18 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ColdTrack needs your location to route you to the nearest cold storage centre when a temperature excursion is detected.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>ColdTrack monitors the shipment in the background and alerts you when the cold chain is at risk.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>ColdTrack uses your location to monitor cold-chain vaccine shipments.</string>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
+	<!-- Google Maps API key. Replace with your real key from Google Cloud
+	     Console. Leave as "your_key_here" to disable the native map and
+	     fall back to the list-only view. -->
+	<key>GoogleMapsApiKey</key>
+	<string>your_key_here</string>
 </dict>
 </plist>
