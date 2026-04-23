@@ -57,6 +57,6 @@
 	     Console. Leave as "your_key_here" to disable the native map and
 	     fall back to the list-only view. -->
 	<key>GoogleMapsApiKey</key>
-	<string>your_key_here</string>
+	<string>AIzaSyDEBsby4FqG5bV-qjFl23ij_9lIsLcwaGY</string>
 </dict>
 </plist>

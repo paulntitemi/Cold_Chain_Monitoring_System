@@ -16,6 +16,9 @@ class AppColors {
   static const textSecondary = Color(0xFF9CA3AF);
 
   static const border = Color(0xFF293145);
+
+  /// Dot-grid texture overlay used on dark backgrounds.
+  static const gridDot = Color(0x08FFFFFF); // rgba(255,255,255,0.03)
 }
 
 /// Central risk level → colour mapping.
@@ -25,7 +28,7 @@ extension RiskLevelColor on RiskLevel {
   Color get color {
     switch (this) {
       case RiskLevel.low:
-        return AppColors.safe;
+        return AppColors.primary;
       case RiskLevel.medium:
         return AppColors.warning;
       case RiskLevel.high:
@@ -51,17 +54,46 @@ extension RiskLevelColor on RiskLevel {
         return 'UNKNOWN';
     }
   }
+
+  /// Pulse cadence — slow (gentle breath) when safe, fast (urgent) when critical.
+  Duration get pulseDuration {
+    switch (this) {
+      case RiskLevel.low:
+        return const Duration(milliseconds: 2400);
+      case RiskLevel.medium:
+        return const Duration(milliseconds: 1400);
+      case RiskLevel.high:
+        return const Duration(milliseconds: 900);
+      case RiskLevel.critical:
+        return const Duration(milliseconds: 550);
+      case RiskLevel.unknown:
+        return const Duration(milliseconds: 2400);
+    }
+  }
 }
 
 class AppTheme {
   static ThemeData dark() {
     final base = ThemeData.dark(useMaterial3: true);
 
+    // Display numerals — Syne is very bold and wide, ideal for the gauge.
+    final displayStyle = GoogleFonts.syne(
+      color: AppColors.textPrimary,
+      fontWeight: FontWeight.w800,
+    );
     final headingStyle = GoogleFonts.spaceGrotesk(
       color: AppColors.textPrimary,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
     );
     final bodyStyle = GoogleFonts.dmSans(color: AppColors.textPrimary);
+
+    // Uppercase tracked labels shared by status badges, stat pills, section heads.
+    final labelTracked = bodyStyle.copyWith(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.88, // 0.08em at 11sp
+      color: AppColors.textSecondary,
+    );
 
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.background,
@@ -75,21 +107,23 @@ class AppTheme {
         onSurface: AppColors.textPrimary,
       ),
       textTheme: TextTheme(
-        displayLarge: headingStyle.copyWith(fontSize: 48),
-        displayMedium: headingStyle.copyWith(fontSize: 36),
+        // Display = gauge numeral, stat pill value — Syne
+        displayLarge: displayStyle.copyWith(fontSize: 64, height: 1.0),
+        displayMedium: displayStyle.copyWith(fontSize: 44, height: 1.0),
+        displaySmall: displayStyle.copyWith(fontSize: 32, height: 1.0),
+        // Headline = screen titles, card titles — Space Grotesk
         headlineLarge: headingStyle.copyWith(fontSize: 28),
         headlineMedium: headingStyle.copyWith(fontSize: 22),
         headlineSmall: headingStyle.copyWith(fontSize: 18),
         titleLarge: headingStyle.copyWith(fontSize: 20),
         titleMedium: headingStyle.copyWith(fontSize: 16),
+        // Body — DM Sans
         bodyLarge: bodyStyle.copyWith(fontSize: 16),
         bodyMedium: bodyStyle.copyWith(fontSize: 14),
         bodySmall: bodyStyle.copyWith(fontSize: 12, color: AppColors.textSecondary),
-        labelLarge: bodyStyle.copyWith(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
+        // Label = pill labels, section heads
+        labelLarge: labelTracked,
+        labelMedium: labelTracked.copyWith(fontSize: 10, letterSpacing: 0.8),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.background,
@@ -113,12 +147,12 @@ class AppTheme {
           foregroundColor: AppColors.background,
           minimumSize: const Size.fromHeight(56),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(28), // pill
           ),
           textStyle: bodyStyle.copyWith(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
           ),
         ),
       ),
@@ -128,7 +162,7 @@ class AppTheme {
           minimumSize: const Size.fromHeight(56),
           side: const BorderSide(color: AppColors.border),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(28),
           ),
         ),
       ),
@@ -136,15 +170,15 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         labelStyle: bodyStyle.copyWith(color: AppColors.textSecondary),
@@ -160,6 +194,10 @@ class AppTheme {
       dividerTheme: const DividerThemeData(
         color: AppColors.border,
         thickness: 1,
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.background,
       ),
     );
   }

@@ -36,7 +36,7 @@
              from Google Cloud Console (Maps SDK for Android enabled). -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="your_key_here"/>
+            android:value="AIzaSyDEBsby4FqG5bV-qjFl23ij_9lIsLcwaGY"/>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

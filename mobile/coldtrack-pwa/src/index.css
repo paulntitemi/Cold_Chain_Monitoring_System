@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  background-color: #080C14;
+  color: #E2E8F0;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  touch-action: manipulation;
+}
+
+/* Bump type scale +2pt on touch devices for outdoor glare / visor legibility. */
+html {
+  font-size: 17px;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* iOS safe-area reserves */
+body {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Hide scrollbars on mobile but keep them functional on desktop dev. */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E2D45;
+}

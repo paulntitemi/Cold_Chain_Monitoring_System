@@ -11,9 +11,9 @@ import '../utils/extensions.dart';
 
 enum _PillHealth { healthy, degraded, down }
 
-/// Persistent status row below the app bar showing:
-///   [API ●]   [GPS ●]   [Sensor ●]
-/// Tap any pill to see a tooltip with last-success timestamp.
+/// Persistent status row showing API / GPS / Sensor health.
+/// Healthy pills collapse to a 6px dot; degraded/down pills expand with
+/// a label so problems get the rider's attention.
 class ConnectivityBanner extends ConsumerWidget {
   const ConnectivityBanner({super.key});
 
@@ -28,23 +28,30 @@ class ConnectivityBanner extends ConsumerWidget {
     final (gpsHealth, gpsSince) = _gpsHealth(location, riderPos);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.background,
         border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
-          _StatusPill(
-              label: 'API', health: apiHealth, lastSuccess: apiSince),
-          const SizedBox(width: 8),
-          _StatusPill(
-              label: 'GPS', health: gpsHealth, lastSuccess: gpsSince),
-          const SizedBox(width: 8),
+          _StatusPill(label: 'API', health: apiHealth, lastSuccess: apiSince),
+          const SizedBox(width: 10),
+          _StatusPill(label: 'GPS', health: gpsHealth, lastSuccess: gpsSince),
+          const SizedBox(width: 10),
           _StatusPill(
               label: 'SENSOR',
               health: sensorHealth,
               lastSuccess: sensorSince),
+          const Spacer(),
+          if (apiSince != null)
+            Text(
+              'synced ${apiSince.toLocal().relativeToNow}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+            ),
         ],
       ),
     );
@@ -82,9 +89,7 @@ class ConnectivityBanner extends ConsumerWidget {
       case LocationStatus.disabled:
         return (_PillHealth.down, null);
       case LocationStatus.unknown:
-        return position.hasValue
-            ? (_PillHealth.degraded, null)
-            : (_PillHealth.degraded, null);
+        return (_PillHealth.degraded, null);
     }
   }
 }
@@ -112,20 +117,30 @@ class _StatusPill extends StatelessWidget {
   }
 
   String get _tooltip {
-    if (lastSuccess == null) return '$label: no data yet';
-    return '$label: last success ${lastSuccess!.toLocal().relativeToNow}';
+    final healthLabel = health.name.toUpperCase();
+    if (lastSuccess == null) return '$label $healthLabel — no data yet';
+    return '$label $healthLabel — last ${lastSuccess!.toLocal().relativeToNow}';
   }
 
   @override
   Widget build(BuildContext context) {
+    // Healthy → collapsed 6px dot only. Degraded / down → expanded with label.
+    final collapsed = health == _PillHealth.healthy;
+
     return Tooltip(
       message: _tooltip,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+        padding: collapsed
+            ? const EdgeInsets.all(3)
+            : const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: _colour.withValues(alpha: 0.15),
+          color: _colour.withValues(alpha: collapsed ? 0.0 : 0.15),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: _colour.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: _colour.withValues(alpha: collapsed ? 0.0 : 0.4),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -138,22 +153,24 @@ class _StatusPill extends StatelessWidget {
                 color: _colour,
                 boxShadow: [
                   BoxShadow(
-                    color: _colour.withValues(alpha: 0.6),
-                    blurRadius: 4,
+                    color: _colour.withValues(alpha: 0.7),
+                    blurRadius: collapsed ? 4 : 6,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: _colour,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
+            if (!collapsed) ...[
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: _colour,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
