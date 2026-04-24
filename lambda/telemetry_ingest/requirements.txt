@@ -1,0 +1,2 @@
+# No third-party deps — the Lambda uses boto3 (bundled) + urllib (stdlib) only.
+# This file is intentionally empty; deploy script will skip pip install.

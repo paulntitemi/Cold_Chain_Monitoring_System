@@ -27,7 +27,7 @@ lambda_timeout = 30
 lambda_memory  = 256
 
 # InfluxDB Configuration
-influx_url    = "http://localhost:8086"
-influx_token  = "your-influxdb-token-here"
-influx_org    = "coldtrack"
+influx_url    = "https://eu-central-1-1.aws.cloud2.influxdata.com"
+influx_token  = "oB18cqdqFInMlYFeqUgTMi9ddaQq3QmKPGp4Dvl9O18ETszI274oOYvYH78opww5dIhLax-h6qmZI0M3EPLuGA=="
+influx_org    = "UCL IoT Team"
 influx_bucket = "sensors"

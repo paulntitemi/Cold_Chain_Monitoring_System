@@ -11,8 +11,10 @@ resource "aws_apigatewayv2_api" "coldtrack_api" {
   description   = "ColdTrack Cold Chain Monitoring REST API"
 
   cors_configuration {
-    allow_headers = ["Content-Type", "Authorization", "X-Api-Key"]
-    allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    # "*" lets the browser preflight approve SigV4 headers (x-amz-date, etc.)
+    # sent by the dashboard + PWA. PATCH added for alert/batch updates.
+    allow_headers = ["*"]
+    allow_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     allow_origins = ["*"]
     max_age       = 3600
   }

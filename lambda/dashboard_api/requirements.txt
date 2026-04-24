@@ -1,0 +1,1 @@
+# boto3 is bundled with the Lambda runtime; no extra deps.

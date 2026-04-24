@@ -70,15 +70,4 @@ output "firehose_stream_arn" {
   value       = aws_kinesis_firehose_delivery_stream.telemetry_to_s3.arn
 }
 
-# -----------------------------------------------------------------------------
-# Timestream
-# -----------------------------------------------------------------------------
-output "timestream_database_name" {
-  description = "Name of the Timestream database for telemetry data"
-  value       = aws_timestreamwrite_database.telemetry.database_name
-}
-
-output "timestream_table_name" {
-  description = "Name of the Timestream table for sensor readings"
-  value       = aws_timestreamwrite_table.sensor_data.table_name
-}
+# Timestream outputs removed — we use InfluxDB for time-series data.

@@ -2,40 +2,10 @@
 # ColdTrack Cold Chain Monitoring System - Storage Resources
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# Amazon Timestream Database
-# -----------------------------------------------------------------------------
-resource "aws_timestreamwrite_database" "telemetry" {
-  database_name = "${var.project_name}-telemetry"
-
-  tags = {
-    Name = "${var.project_name}-telemetry"
-  }
-}
-
-# -----------------------------------------------------------------------------
-# Amazon Timestream Table - Sensor Data
-# -----------------------------------------------------------------------------
-resource "aws_timestreamwrite_table" "sensor_data" {
-  database_name = aws_timestreamwrite_database.telemetry.database_name
-  table_name    = "sensor_data"
-
-  retention_properties {
-    # In-memory store: 90 days for fast queries on recent data
-    memory_store_retention_period_in_hours = 2160 # 90 days
-
-    # Magnetic store: 1 year for historical analysis and compliance
-    magnetic_store_retention_period_in_days = 365
-  }
-
-  magnetic_store_write_properties {
-    enable_magnetic_store_writes = true
-  }
-
-  tags = {
-    Name = "${var.project_name}-sensor-data"
-  }
-}
+# Timestream for LiveAnalytics is no longer accepting new AWS customers
+# (as of 2025). We use InfluxDB for time-series telemetry instead — the
+# telemetry_ingest Lambda writes points via the Influx HTTP API. The S3
+# raw-data bucket below still serves as the long-term archive via Firehose.
 
 # -----------------------------------------------------------------------------
 # S3 Bucket - Raw Telemetry Data (ML training + long-term archive)

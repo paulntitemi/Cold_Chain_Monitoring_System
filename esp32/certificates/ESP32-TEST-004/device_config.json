@@ -1,0 +1,38 @@
+{
+    "device_id": "ESP32-TEST-004",
+    "client_id": "ESP32-TEST-004",
+    "iot_endpoint": "amfou4arkp5l-ats.iot.eu-west-1.amazonaws.com",
+    "region": "eu-west-1",
+    "mqtt": {
+        "port": 8883,
+        "keep_alive_seconds": 30,
+        "ping_timeout_ms": 3000,
+        "protocol": "mqtt"
+    },
+    "certificates": {
+        "root_ca": "AmazonRootCA1.pem",
+        "certificate": "certificate.pem.crt",
+        "private_key": "private.pem.key"
+    },
+    "topics": {
+        "telemetry": "coldtrack/sensors/ESP32-TEST-004/telemetry",
+        "alerts": "coldtrack/sensors/ESP32-TEST-004/alerts",
+        "status": "coldtrack/sensors/ESP32-TEST-004/status",
+        "commands": "coldtrack/commands/ESP32-TEST-004",
+        "config": "coldtrack/config/ESP32-TEST-004"
+    },
+    "telemetry": {
+        "publish_interval_seconds": 5,
+        "temperature_unit": "celsius",
+        "gps_enabled": true
+    },
+    "thresholds": {
+        "temp_min_celsius": 2.0,
+        "temp_max_celsius": 8.0,
+        "freeze_threshold_celsius": 0.0,
+        "battery_low_percent": 20,
+        "battery_critical_percent": 5
+    },
+    "provisioned_at": "2026-04-24T14:33:02Z",
+    "certificate_arn": "arn:aws:iot:eu-west-1:825765428301:cert/50344b8935fdc8318181567d819f9246c17832d5cea1e158440eafc86128a162"
+}
