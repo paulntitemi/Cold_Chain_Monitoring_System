@@ -5,6 +5,12 @@ import { signRequest } from './sigv4';
 import { haversineMeters } from './haversine';
 import { enqueueWrite } from './offlineQueue';
 import {
+  fetchLiveAlertsForShipment,
+  fetchLiveShipment,
+  liveOverlayActive,
+  patchLiveAlert,
+} from './liveOverlay';
+import {
   mockAlert,
   mockAssignments,
   mockBatch,
@@ -238,6 +244,13 @@ export const api = {
 
   async getMyShipment(): Promise<Shipment | null> {
     if (env.useMockData) {
+      // In hybrid demo mode, the rider's "active shipment" is the live
+      // physical carrier driven by the ESP32, not the scripted Jake mock.
+      if (liveOverlayActive()) {
+        const live = await fetchLiveShipment();
+        if (live) return live;
+        // AWS unreachable — fall through to mock so the screen stays usable.
+      }
       await mockDelay();
       return tickShipment();
     }
@@ -247,6 +260,12 @@ export const api = {
 
   async getMyAlerts(): Promise<Alert[]> {
     if (env.useMockData) {
+      if (liveOverlayActive()) {
+        const live = await fetchLiveAlertsForShipment();
+        if (live.length > 0) return live;
+        // No live alert active — fall through to mock so the demo can still
+        // play the scripted scenario when the sensor is in range.
+      }
       await mockDelay();
       return mockAlertActive && mockAlert.status === 'active' ? [{ ...mockAlert }] : [];
     }
@@ -320,6 +339,12 @@ export const api = {
 
   async patchAlert(id: string, patch: Partial<Alert>): Promise<Alert> {
     if (env.useMockData) {
+      // Write through to AWS first so the dashboard's poll picks it up;
+      // the rider tapping Accept needs to flip the dashboard to green.
+      if (liveOverlayActive()) {
+        const live = await patchLiveAlert(id, patch);
+        if (live) return live;
+      }
       await mockDelay();
       Object.assign(mockAlert, patch);
       if (patch.riderResponse === 'accepted') {

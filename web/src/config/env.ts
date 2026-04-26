@@ -10,6 +10,13 @@ interface EnvConfig {
   googleMapsApiKey: string;
   enableAudioAlerts: boolean;
   useMockData: boolean;
+  /**
+   * Hybrid demo: when in mock mode, this shipment id is overlaid with
+   * data fetched from `liveApiUrl`. Lets us run a rich mock fleet on the
+   * dashboard while one specific row reflects the actual ESP32 carrier.
+   */
+  liveShipmentId: string;
+  liveApiUrl: string;
 }
 
 function str(key: string, fallback = ''): string {
@@ -35,4 +42,6 @@ export const env: EnvConfig = {
   googleMapsApiKey: str('VITE_GOOGLE_MAPS_API_KEY'),
   enableAudioAlerts: bool('VITE_ENABLE_AUDIO_ALERTS', true),
   useMockData: bool('VITE_USE_MOCK_DATA', true),
+  liveShipmentId: str('VITE_LIVE_SHIPMENT_ID'),
+  liveApiUrl: str('VITE_LIVE_API_URL'),
 };

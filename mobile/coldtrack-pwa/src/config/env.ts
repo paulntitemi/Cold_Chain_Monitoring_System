@@ -10,6 +10,13 @@ interface EnvConfig {
   useMockData: boolean;
   enableVoiceAlerts: boolean;
   enableWebPush: boolean;
+  /**
+   * Hybrid demo. When set, this shipment id is overlaid with live data
+   * from `liveApiUrl` (the dashboard API). The rest of the app stays on
+   * mock data so login, assignments, profile etc. still work end-to-end.
+   */
+  liveShipmentId: string;
+  liveApiUrl: string;
 }
 
 function str(key: string, fallback = ''): string {
@@ -35,4 +42,6 @@ export const env: EnvConfig = {
   useMockData: bool('VITE_USE_MOCK_DATA', true),
   enableVoiceAlerts: bool('VITE_ENABLE_VOICE_ALERTS', true),
   enableWebPush: bool('VITE_ENABLE_WEB_PUSH', true),
+  liveShipmentId: str('VITE_LIVE_SHIPMENT_ID'),
+  liveApiUrl: str('VITE_LIVE_API_URL'),
 };

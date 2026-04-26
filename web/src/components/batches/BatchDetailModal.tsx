@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import type { VaccineBatch, CustodyEventType } from '@/types/batch';
 import { VVMBadge } from './VVMBadge';
 import { TemperatureFullChart } from '@/components/charts/TemperatureFullChart';
 import { useShipmentsStore } from '@/store/shipmentsStore';
+import { safeFormat } from '@/lib/safeDate';
 
 interface Props {
   batch: VaccineBatch;
@@ -95,11 +95,11 @@ export function BatchDetailModal({ batch, onClose }: Props) {
                 <Item label="Manufacturer" value={batch.manufacturer} />
                 <Item
                   label="Manufactured"
-                  value={format(new Date(batch.manufactureDate), 'dd MMM yyyy')}
+                  value={safeFormat(batch.manufactureDate, 'dd MMM yyyy')}
                 />
                 <Item
                   label="Expires"
-                  value={format(new Date(batch.expiryDate), 'dd MMM yyyy')}
+                  value={safeFormat(batch.expiryDate, 'dd MMM yyyy')}
                 />
                 <Item
                   label="Doses"
@@ -133,7 +133,11 @@ export function BatchDetailModal({ batch, onClose }: Props) {
               <Panel title="Current location">
                 <Item
                   label="Status"
-                  value={batch.status.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                  value={
+                    (batch.status ?? '—')
+                      .replace('_', ' ')
+                      .replace(/\b\w/g, (c) => c.toUpperCase())
+                  }
                 />
                 <Item
                   label="Shipment"
@@ -148,44 +152,50 @@ export function BatchDetailModal({ batch, onClose }: Props) {
               <Panel title="Excursion summary">
                 <Item
                   label="Cumulative time"
-                  value={`${batch.totalExcursionMinutes} min`}
+                  value={`${batch.totalExcursionMinutes ?? 0} min`}
                 />
                 <Item
                   label="Excursion events"
-                  value={batch.chainOfCustody.filter((e) => e.eventType === 'excursion').length}
+                  value={(batch.chainOfCustody ?? []).filter((e) => e.eventType === 'excursion').length}
                 />
                 <Item
                   label="Alerts"
-                  value={batch.chainOfCustody.filter((e) => e.eventType === 'alert').length}
+                  value={(batch.chainOfCustody ?? []).filter((e) => e.eventType === 'alert').length}
                 />
               </Panel>
             </div>
           )}
 
           {tab === 'custody' && (
-            <ol className="relative ml-3 border-l border-border pl-5 space-y-4">
-              {batch.chainOfCustody.map((e) => (
-                <li key={e.id} className="relative">
-                  <span className="absolute -left-[30px] top-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-bg-card text-[10px]">
-                    {custodyIcon[e.eventType]}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-display text-xs font-semibold uppercase tracking-widest text-text-primary">
-                      {e.eventType}
+            (batch.chainOfCustody ?? []).length === 0 ? (
+              <div className="py-12 text-center text-sm text-text-secondary">
+                No custody events recorded yet.
+              </div>
+            ) : (
+              <ol className="relative ml-3 border-l border-border pl-5 space-y-4">
+                {(batch.chainOfCustody ?? []).map((e) => (
+                  <li key={e.id} className="relative">
+                    <span className="absolute -left-[30px] top-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-bg-card text-[10px]">
+                      {custodyIcon[e.eventType]}
                     </span>
-                    <span className="font-mono text-[11px] text-text-secondary">
-                      {format(new Date(e.timestamp), 'dd MMM HH:mm')}
-                    </span>
-                  </div>
-                  <div className="text-sm text-text-primary">{e.location}</div>
-                  <div className="text-xs text-text-secondary">
-                    Handled by {e.handledBy}
-                    {typeof e.tempAtEvent === 'number' && ` · ${e.tempAtEvent.toFixed(1)}°C`}
-                  </div>
-                  {e.notes && <div className="text-xs text-text-secondary italic">{e.notes}</div>}
-                </li>
-              ))}
-            </ol>
+                    <div className="flex items-center gap-2">
+                      <span className="font-display text-xs font-semibold uppercase tracking-widest text-text-primary">
+                        {e.eventType}
+                      </span>
+                      <span className="font-mono text-[11px] text-text-secondary">
+                        {safeFormat(e.timestamp, 'dd MMM HH:mm')}
+                      </span>
+                    </div>
+                    <div className="text-sm text-text-primary">{e.location}</div>
+                    <div className="text-xs text-text-secondary">
+                      Handled by {e.handledBy}
+                      {typeof e.tempAtEvent === 'number' && ` · ${e.tempAtEvent.toFixed(1)}°C`}
+                    </div>
+                    {e.notes && <div className="text-xs text-text-secondary italic">{e.notes}</div>}
+                  </li>
+                ))}
+              </ol>
+            )
           )}
 
           {tab === 'temperature' && (

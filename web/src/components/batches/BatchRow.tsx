@@ -1,7 +1,8 @@
-import { differenceInDays, format, formatDistanceToNow } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import clsx from 'clsx';
 import type { VaccineBatch } from '@/types/batch';
 import { VVMBadge } from './VVMBadge';
+import { safeDate, safeDistance, safeFormat } from '@/lib/safeDate';
 
 interface Props {
   batch: VaccineBatch;
@@ -12,9 +13,16 @@ interface Props {
 
 export function BatchRow({ batch, onOpen, onEdit, onDiscard }: Props) {
   const depletion = batch.doseCount > 0 ? batch.dosesRemaining / batch.doseCount : 0;
-  const daysLeft = differenceInDays(new Date(batch.expiryDate), new Date());
+  const expiry = safeDate(batch.expiryDate);
+  const daysLeft = expiry ? differenceInDays(expiry, new Date()) : null;
   const expiryTone =
-    daysLeft < 30 ? 'text-red' : daysLeft < 90 ? 'text-amber' : 'text-text-primary';
+    daysLeft === null
+      ? 'text-text-secondary'
+      : daysLeft < 30
+      ? 'text-red'
+      : daysLeft < 90
+      ? 'text-amber'
+      : 'text-text-primary';
 
   const statusLabel: Record<VaccineBatch['status'], { label: string; cls: string }> = {
     in_transit: { label: 'In Transit', cls: 'text-teal' },
@@ -22,6 +30,9 @@ export function BatchRow({ batch, onOpen, onEdit, onDiscard }: Props) {
     delivered: { label: 'Delivered', cls: 'text-green' },
     discarded: { label: 'Discarded', cls: 'text-red' },
   };
+  const statusInfo = statusLabel[batch.status] ?? { label: batch.status ?? '—', cls: 'text-text-secondary' };
+  const events = batch.chainOfCustody ?? [];
+  const lastEventTs = events.length > 0 ? events[events.length - 1].timestamp : batch.manufactureDate;
 
   return (
     <tr
@@ -59,9 +70,13 @@ export function BatchRow({ batch, onOpen, onEdit, onDiscard }: Props) {
         {batch.minSafeTemp}°C – {batch.maxSafeTemp}°C
       </td>
       <td className={clsx('px-2 py-2 font-mono text-xs', expiryTone)}>
-        {format(new Date(batch.expiryDate), 'dd MMM yyyy')}
+        {safeFormat(batch.expiryDate, 'dd MMM yyyy')}
         <div className="text-[10px] text-text-secondary">
-          {daysLeft > 0 ? `${daysLeft}d left` : `expired ${Math.abs(daysLeft)}d`}
+          {daysLeft === null
+            ? 'no expiry set'
+            : daysLeft > 0
+            ? `${daysLeft}d left`
+            : `expired ${Math.abs(daysLeft)}d`}
         </div>
       </td>
       <td className="px-2 py-2 font-mono text-xs">
@@ -69,17 +84,14 @@ export function BatchRow({ batch, onOpen, onEdit, onDiscard }: Props) {
           {batch.totalExcursionMinutes}m
         </span>
       </td>
-      <td className={clsx('px-2 py-2 text-xs', statusLabel[batch.status].cls)}>
-        <div>{statusLabel[batch.status].label}</div>
+      <td className={clsx('px-2 py-2 text-xs', statusInfo.cls)}>
+        <div>{statusInfo.label}</div>
         <div className="text-[10px] text-text-secondary font-mono">
           {batch.currentShipmentId ?? batch.storageLocation ?? '—'}
         </div>
       </td>
       <td className="px-2 py-2 text-[11px] text-text-secondary">
-        {formatDistanceToNow(
-          new Date(batch.chainOfCustody[batch.chainOfCustody.length - 1]?.timestamp ?? batch.manufactureDate),
-          { addSuffix: true },
-        )}
+        {safeDistance(lastEventTs)}
       </td>
       <td className="px-3 py-2">
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>

@@ -163,10 +163,38 @@ def lambda_handler(event, _context):
 # ---------------------------------------------------------------------------
 # Fleet / shipments
 # ---------------------------------------------------------------------------
+def _shape_shipment(item):
+    """Fill in fields the dashboard treats as required so .map() / chart
+    renders don't crash when the DynamoDB row omits them."""
+    item = _native(item)
+    item.setdefault("temperatureHistory", [])
+    item.setdefault("incidentLog", [])
+    item.setdefault("batchIds", [])
+    return item
+
+
+def _shape_batch(item):
+    """Same idea for batches — defaults for fields the BatchRegistry view
+    touches (chainOfCustody iteration, date formatting, etc.)."""
+    item = _native(item)
+    item.setdefault("chainOfCustody", [])
+    item.setdefault("linkedShipmentIds", [])
+    item.setdefault("manufactureDate", "")
+    item.setdefault("expiryDate", "")
+    item.setdefault("totalExcursionMinutes", 0)
+    return item
+
+
+def _shape_alert(item):
+    item = _native(item)
+    item.setdefault("batchIds", [])
+    return item
+
+
 def _get_active_fleet():
     # Scan with filter — volume is small (hundreds of rows max in this domain).
     res = _shipments.scan(FilterExpression=Attr("status").eq("active"))
-    items = [_native(i) for i in res.get("Items", [])]
+    items = [_shape_shipment(i) for i in res.get("Items", [])]
     return _response(200, items)
 
 
@@ -174,7 +202,7 @@ def _get_shipment(shipment_id):
     item = _shipments.get_item(Key={"id": shipment_id}).get("Item")
     if not item:
         return _response(404, {"error": f"Shipment {shipment_id} not found"})
-    return _response(200, _native(item))
+    return _response(200, _shape_shipment(item))
 
 
 def _start_shipment(shipment_id, _body):
@@ -210,14 +238,14 @@ def _ping_shipment(shipment_id, body):
 # ---------------------------------------------------------------------------
 def _list_batches():
     res = _batches.scan()
-    return _response(200, [_native(i) for i in res.get("Items", [])])
+    return _response(200, [_shape_batch(i) for i in res.get("Items", [])])
 
 
 def _get_batch(batch_id):
     item = _batches.get_item(Key={"batchId": batch_id}).get("Item")
     if not item:
         return _response(404, {"error": f"Batch {batch_id} not found"})
-    return _response(200, _native(item))
+    return _response(200, _shape_batch(item))
 
 
 def _create_batch(body):
@@ -245,12 +273,12 @@ def _patch_batch(batch_id, body):
 # ---------------------------------------------------------------------------
 def _list_alerts(_query):
     res = _alerts.scan()
-    return _response(200, [_native(i) for i in res.get("Items", [])])
+    return _response(200, [_shape_alert(i) for i in res.get("Items", [])])
 
 
 def _list_active_alerts():
     res = _alerts.scan(FilterExpression=Attr("status").eq("active"))
-    return _response(200, [_native(i) for i in res.get("Items", [])])
+    return _response(200, [_shape_alert(i) for i in res.get("Items", [])])
 
 
 def _patch_alert(alert_id, body):
@@ -264,7 +292,7 @@ def _patch_alert(alert_id, body):
         ExpressionAttributeValues=expr_vals,
     )
     item = _alerts.get_item(Key={"id": alert_id}).get("Item", {})
-    return _response(200, _native(item))
+    return _response(200, _shape_alert(item))
 
 
 # ---------------------------------------------------------------------------
@@ -317,7 +345,7 @@ def _get_my_shipment(headers):
     items = res.get("Items", [])
     if not items:
         return _response(200, None)
-    return _response(200, _native(items[0]))
+    return _response(200, _shape_shipment(items[0]))
 
 
 def _get_my_alerts(headers):

@@ -8,6 +8,14 @@ import {
   mockRiders,
   mockShipments,
 } from '@/mock/mockData';
+import {
+  fetchLiveAlertsForShipment,
+  fetchLiveShipment,
+  liveOverlayActive,
+  overlayAlertsInto,
+  overlayShipmentInto,
+  patchLiveAlert,
+} from './liveOverlay';
 import type { Shipment } from '@/types/shipment';
 import type { VaccineBatch } from '@/types/batch';
 import type { Alert } from '@/types/alert';
@@ -229,13 +237,25 @@ async function mockGet<T>(url: string): Promise<T> {
 
 export const api = {
   async getActiveFleet(): Promise<Shipment[]> {
-    if (env.useMockData) return mockGet<Shipment[]>('/fleet/active');
+    if (env.useMockData) {
+      const fleet = await mockGet<Shipment[]>('/fleet/active');
+      if (!liveOverlayActive()) return fleet;
+      const live = await fetchLiveShipment();
+      return live ? overlayShipmentInto(fleet, live) : fleet;
+    }
     const { data } = await apiClient.get<Shipment[]>('/fleet/active');
     return data;
   },
 
   async getShipment(id: string): Promise<Shipment> {
-    if (env.useMockData) return mockGet<Shipment>(`/shipments/${id}`);
+    if (env.useMockData) {
+      // If the user is drilling into the live shipment, hit AWS for it.
+      if (liveOverlayActive() && id === env.liveShipmentId) {
+        const live = await fetchLiveShipment();
+        if (live) return live;
+      }
+      return mockGet<Shipment>(`/shipments/${id}`);
+    }
     const { data } = await apiClient.get<Shipment>(`/shipments/${id}`);
     return data;
   },
@@ -289,7 +309,12 @@ export const api = {
   },
 
   async getActiveAlerts(): Promise<Alert[]> {
-    if (env.useMockData) return mockGet<Alert[]>('/alerts/active');
+    if (env.useMockData) {
+      const mocked = await mockGet<Alert[]>('/alerts/active');
+      if (!liveOverlayActive()) return mocked;
+      const live = await fetchLiveAlertsForShipment(env.liveShipmentId);
+      return overlayAlertsInto(mocked, live);
+    }
     const { data } = await apiClient.get<Alert[]>('/alerts/active');
     return data;
   },
@@ -302,6 +327,12 @@ export const api = {
 
   async patchAlert(id: string, patch: Partial<Alert>): Promise<Alert> {
     if (env.useMockData) {
+      // If this alert belongs to the live shipment, write it through to AWS
+      // so the rider PWA's poll picks up the change.
+      if (liveOverlayActive()) {
+        const live = await patchLiveAlert(id, patch);
+        if (live) return live;
+      }
       const a = mockAlerts.find((x) => x.id === id);
       if (!a) throw new Error('Alert not found');
       Object.assign(a, patch);

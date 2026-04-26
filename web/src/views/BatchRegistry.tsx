@@ -44,16 +44,25 @@ export function BatchRegistry() {
             return b.status === 'delivered';
           case 'discarded':
             return b.status === 'discarded';
-          case 'expiring':
-            return differenceInDays(new Date(b.expiryDate), new Date()) < 90;
+          case 'expiring': {
+            if (!b.expiryDate) return false;
+            const d = new Date(b.expiryDate);
+            if (Number.isNaN(d.getTime())) return false;
+            return differenceInDays(d, new Date()) < 90;
+          }
         }
       })
       .sort((a, b) => {
         switch (sort) {
           case 'batchId':
             return a.batchId.localeCompare(b.batchId);
-          case 'expiry':
-            return +new Date(a.expiryDate) - +new Date(b.expiryDate);
+          case 'expiry': {
+            // Push rows with bad/missing dates to the end.
+            const av = a.expiryDate ? new Date(a.expiryDate).getTime() : Number.POSITIVE_INFINITY;
+            const bv = b.expiryDate ? new Date(b.expiryDate).getTime() : Number.POSITIVE_INFINITY;
+            return (Number.isNaN(av) ? Number.POSITIVE_INFINITY : av) -
+                   (Number.isNaN(bv) ? Number.POSITIVE_INFINITY : bv);
+          }
           case 'excursion':
             return b.totalExcursionMinutes - a.totalExcursionMinutes;
           case 'vvm':

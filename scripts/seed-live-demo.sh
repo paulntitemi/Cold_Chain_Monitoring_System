@@ -9,7 +9,7 @@
 # =============================================================================
 set -euo pipefail
 
-REGION="${AWS_REGION:-eu-west-2}"
+REGION="${AWS_REGION:-eu-west-1}"
 
 echo "Seeding coldtrack-riders..."
 aws dynamodb put-item --region "$REGION" --table-name coldtrack-riders --item '{

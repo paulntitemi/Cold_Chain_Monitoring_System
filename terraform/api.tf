@@ -64,52 +64,7 @@ resource "aws_cloudwatch_log_group" "api_gateway" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Lambda Integration (proxy)
-# -----------------------------------------------------------------------------
-resource "aws_apigatewayv2_integration" "lambda_api_handler" {
-  api_id                 = aws_apigatewayv2_api.coldtrack_api.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.api_handler.invoke_arn
-  integration_method     = "POST"
-  payload_format_version = "2.0"
-}
-
-# -----------------------------------------------------------------------------
-# Routes
-# -----------------------------------------------------------------------------
-
-# GET /devices - List all registered devices
-resource "aws_apigatewayv2_route" "get_devices" {
-  api_id    = aws_apigatewayv2_api.coldtrack_api.id
-  route_key = "GET /devices"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_api_handler.id}"
-}
-
-# GET /devices/{deviceId} - Get details for a specific device
-resource "aws_apigatewayv2_route" "get_device" {
-  api_id    = aws_apigatewayv2_api.coldtrack_api.id
-  route_key = "GET /devices/{deviceId}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_api_handler.id}"
-}
-
-# GET /devices/{deviceId}/telemetry - Get telemetry data for a device
-resource "aws_apigatewayv2_route" "get_device_telemetry" {
-  api_id    = aws_apigatewayv2_api.coldtrack_api.id
-  route_key = "GET /devices/{deviceId}/telemetry"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_api_handler.id}"
-}
-
-# GET /alerts - List all temperature alerts
-resource "aws_apigatewayv2_route" "get_alerts" {
-  api_id    = aws_apigatewayv2_api.coldtrack_api.id
-  route_key = "GET /alerts"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_api_handler.id}"
-}
-
-# POST /devices/{deviceId}/commands - Send a command to a specific device
-resource "aws_apigatewayv2_route" "post_device_commands" {
-  api_id    = aws_apigatewayv2_api.coldtrack_api.id
-  route_key = "POST /devices/{deviceId}/commands"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_api_handler.id}"
-}
+# The old api_handler integration + /devices* routes have been removed.
+# All dashboard + rider routes now live in terraform/dashboard_api.tf
+# behind a single Lambda (coldtrack-dashboard-api). If admin-style device
+# endpoints are needed later, add them there or in a new file.
