@@ -30,6 +30,15 @@ resource "aws_lambda_function" "dashboard_api" {
       HANDOFFS_TABLE        = "coldtrack-handoffs"
       STORAGE_CENTRES_TABLE = "coldtrack-storage-centres"
       DEFAULT_RIDER_ID      = "R-006"
+      # InfluxDB read access — hydrates Shipment.temperatureHistory at
+      # read time so charts survive page reloads. Falls back to empty
+      # history if unset; non-essential for correctness.
+      INFLUX_URL            = var.influx_url
+      INFLUX_TOKEN          = var.influx_token
+      INFLUX_ORG            = var.influx_org
+      INFLUX_BUCKET         = var.influx_bucket
+      INFLUX_HISTORY_HOURS  = "2"
+      INFLUX_HISTORY_LIMIT  = "200"
     }
   }
 

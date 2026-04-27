@@ -136,6 +136,17 @@ export function LiveTripScreen() {
             </div>
           )}
 
+          {/* GPS-indoors notice — fires when the firmware reports
+              gps_fix === false. The rider sees the last known dot in the
+              map but knows it's stale until satellites lock on. */}
+          {shipment.gpsFix === false && (
+            <div className="absolute top-14 left-2 bg-bg-primary/90 border border-amber/50 px-2 py-1 rounded-sm">
+              <div className="font-mono text-[10px] uppercase tracking-wider text-amber">
+                📡 GPS unavailable indoors
+              </div>
+            </div>
+          )}
+
           {/* In nav mode, show a small compact risk pill so the rider still
               sees temperature + safe-for at a glance. */}
           {navMode && (

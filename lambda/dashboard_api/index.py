@@ -52,9 +52,14 @@ Env
   DEFAULT_RIDER_ID      default: R-006
 """
 
+import csv
+import io
 import json
 import logging
 import os
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -73,6 +78,17 @@ _riders = _ddb.Table(os.environ.get("RIDERS_TABLE", "coldtrack-riders"))
 _handoffs = _ddb.Table(os.environ.get("HANDOFFS_TABLE", "coldtrack-handoffs"))
 _centres_table_name = os.environ.get("STORAGE_CENTRES_TABLE", "coldtrack-storage-centres")
 _DEFAULT_RIDER = os.environ.get("DEFAULT_RIDER_ID", "R-006")
+
+# InfluxDB read config — used to hydrate Shipment.temperatureHistory at
+# read-time so the dashboard sparkline + Trip Summary chart survive page
+# reloads. If unset, history stays empty (the client overlay can still
+# accumulate locally during the session).
+INFLUX_URL = os.environ.get("INFLUX_URL", "").rstrip("/")
+INFLUX_TOKEN = os.environ.get("INFLUX_TOKEN", "")
+INFLUX_ORG = os.environ.get("INFLUX_ORG", "coldtrack")
+INFLUX_BUCKET = os.environ.get("INFLUX_BUCKET", "sensors")
+INFLUX_HISTORY_HOURS = int(os.environ.get("INFLUX_HISTORY_HOURS", "2"))
+INFLUX_HISTORY_LIMIT = int(os.environ.get("INFLUX_HISTORY_LIMIT", "200"))
 
 _CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -163,13 +179,21 @@ def lambda_handler(event, _context):
 # ---------------------------------------------------------------------------
 # Fleet / shipments
 # ---------------------------------------------------------------------------
-def _shape_shipment(item):
+def _shape_shipment(item, history_by_id=None):
     """Fill in fields the dashboard treats as required so .map() / chart
-    renders don't crash when the DynamoDB row omits them."""
+    renders don't crash when the DynamoDB row omits them. Optionally
+    hydrate `temperatureHistory` from a precomputed Influx-fetched map."""
     item = _native(item)
     item.setdefault("temperatureHistory", [])
     item.setdefault("incidentLog", [])
     item.setdefault("batchIds", [])
+    if history_by_id is not None:
+        sid = item.get("id")
+        hydrated = history_by_id.get(sid)
+        if hydrated is not None:
+            # Always overwrite with the server-side history when available;
+            # InfluxDB is the source of truth for temperature traces.
+            item["temperatureHistory"] = hydrated
     return item
 
 
@@ -191,10 +215,97 @@ def _shape_alert(item):
     return item
 
 
+def _influx_history(shipment_ids, hours=None, limit=None):
+    """One Flux query that returns the last N readings for each of the
+    given shipment ids, grouped client-side. Returns a dict
+    {shipment_id: [{timestamp, temperature, humidity?}]}.
+
+    Falls back to an empty dict if Influx isn't configured or the query
+    fails — the dashboard never depends on this for correctness, only
+    for richer charts.
+    """
+    if not INFLUX_URL or not INFLUX_TOKEN or not shipment_ids:
+        return {}
+
+    hours = hours or INFLUX_HISTORY_HOURS
+    limit = limit or INFLUX_HISTORY_LIMIT
+
+    # Flux contains() with a string set — quote each id explicitly.
+    quoted_ids = ", ".join(f'"{sid}"' for sid in shipment_ids)
+    flux = (
+        f'from(bucket: "{INFLUX_BUCKET}")\n'
+        f'  |> range(start: -{hours}h)\n'
+        f'  |> filter(fn: (r) => r._measurement == "sensor")\n'
+        f'  |> filter(fn: (r) => r._field == "temperature")\n'
+        f'  |> filter(fn: (r) => contains(value: r.shipment_id, set: [{quoted_ids}]))\n'
+        f'  |> keep(columns: ["_time", "_value", "shipment_id"])\n'
+        f'  |> sort(columns: ["_time"])\n'
+        f'  |> limit(n: {limit * len(shipment_ids)})\n'
+    )
+
+    # Org may contain spaces (e.g. "UCL IoT Team") — must be URL-encoded.
+    url = f"{INFLUX_URL}/api/v2/query?{urllib.parse.urlencode({'org': INFLUX_ORG})}"
+    req = urllib.request.Request(
+        url,
+        data=flux.encode("utf-8"),
+        method="POST",
+        headers={
+            "Authorization": f"Token {INFLUX_TOKEN}",
+            "Content-Type": "application/vnd.flux",
+            "Accept": "application/csv",
+        },
+    )
+
+    out = {sid: [] for sid in shipment_ids}
+    try:
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            text = resp.read().decode("utf-8")
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
+        log.warning("Influx query failed: %s", e)
+        return out
+    except Exception as e:
+        log.warning("Influx query unexpected error: %s", e)
+        return out
+
+    # InfluxDB CSV: annotation rows start with '#', then a header row (no leading '#'),
+    # then data rows (with a leading empty column for 'result').
+    reader = csv.reader(io.StringIO(text))
+    header = None
+    for row in reader:
+        if not row or not any(c.strip() for c in row):
+            # Empty line — separates result tables. Reset header so the
+            # next header row gets re-read.
+            header = None
+            continue
+        if row[0].startswith("#"):
+            continue
+        if header is None:
+            header = row
+            continue
+        rec = dict(zip(header, row))
+        sid = rec.get("shipment_id")
+        ts = rec.get("_time")
+        val = rec.get("_value")
+        if sid in out and ts and val:
+            try:
+                out[sid].append({
+                    "timestamp": ts,
+                    "temperature": float(val),
+                })
+            except ValueError:
+                pass
+    return out
+
+
 def _get_active_fleet():
     # Scan with filter — volume is small (hundreds of rows max in this domain).
     res = _shipments.scan(FilterExpression=Attr("status").eq("active"))
-    items = [_shape_shipment(i) for i in res.get("Items", [])]
+    raw = res.get("Items", [])
+    # Hydrate temperature history for the whole fleet in a single Influx
+    # round-trip; sparklines on each row are then real, not empty.
+    sids = [i.get("id") for i in raw if i.get("id")]
+    history = _influx_history(sids, hours=1, limit=60) if sids else {}
+    items = [_shape_shipment(i, history) for i in raw]
     return _response(200, items)
 
 
@@ -202,7 +313,8 @@ def _get_shipment(shipment_id):
     item = _shipments.get_item(Key={"id": shipment_id}).get("Item")
     if not item:
         return _response(404, {"error": f"Shipment {shipment_id} not found"})
-    return _response(200, _shape_shipment(item))
+    history = _influx_history([shipment_id])
+    return _response(200, _shape_shipment(item, history))
 
 
 def _start_shipment(shipment_id, _body):
@@ -345,7 +457,9 @@ def _get_my_shipment(headers):
     items = res.get("Items", [])
     if not items:
         return _response(200, None)
-    return _response(200, _shape_shipment(items[0]))
+    sid = items[0].get("id")
+    history = _influx_history([sid]) if sid else {}
+    return _response(200, _shape_shipment(items[0], history))
 
 
 def _get_my_alerts(headers):

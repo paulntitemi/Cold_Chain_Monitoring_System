@@ -12,6 +12,7 @@ import { CountdownTimer, ExcursionTimer } from '@/components/ui/CountdownTimer';
 import { TemperatureFullChart } from '@/components/charts/TemperatureFullChart';
 import { FleetMapInset } from '@/components/map/FleetMap';
 import { AlertActionButtons } from '@/components/alerts/AlertActionButtons';
+import { RiskBreakdownPanel } from '@/components/shipments/RiskBreakdownPanel';
 import { api } from '@/lib/apiClient';
 import type { IncidentEventType } from '@/types/shipment';
 
@@ -144,6 +145,8 @@ export function ShipmentDetailPanel() {
           />
         </section>
 
+        <RiskBreakdownPanel shipment={shipment} />
+
         <section>
           <SectionTitle>Batch manifest</SectionTitle>
           <div className="rounded-sm border border-border bg-bg-card">
@@ -263,12 +266,17 @@ export function ShipmentDetailPanel() {
 
         <section>
           <SectionTitle>Location</SectionTitle>
-          <div className="h-[260px] overflow-hidden rounded-sm border border-border">
+          <div className="relative h-[260px] overflow-hidden rounded-sm border border-border">
             <FleetMapInset
               location={shipment.currentLocation}
               destination={shipment.destinationLocation}
               divertTo={divertTo}
             />
+            {shipment.gpsFix === false && (
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-bg-primary/90 border border-amber/50 px-2.5 py-1 rounded-sm text-amber text-[10px] font-mono uppercase tracking-wider pointer-events-none">
+                📡 GPS unavailable indoors · last known position
+              </div>
+            )}
           </div>
         </section>
       </div>

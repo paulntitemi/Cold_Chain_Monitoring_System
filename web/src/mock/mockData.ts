@@ -151,7 +151,9 @@ export const mockRiders: Rider[] = [
     name: 'Jake Fletcher',
     phone: '+447700900006',
     vehicleType: 'motorbike',
-    activeShipmentId: 'SHIP-20240423-006',
+    // Now points at the live AWS shipment (the physical ESP32 carrier on
+    // the demo table) — no mock SHIP-20240423-006 row exists any more.
+    activeShipmentId: 'SHIP-DEV-0001',
     totalTrips: 71,
     alertResponseRate: 0.6,
   },
@@ -552,35 +554,11 @@ export const mockShipments: Shipment[] = [
     temperatureHistory: seriesInRange(40, 4.6, 0.3),
     lastUpdated: minutes(0.5),
   },
-  {
-    id: 'SHIP-20240423-006',
-    deviceId: 'THING-ESP32-006',
-    riderId: 'R-006',
-    riderName: 'Jake Fletcher',
-    riderPhone: '+447700900006',
-    batchIds: ['YFV-2024-UK-0008'],
-    origin: "King's College Hospital",
-    destination: 'Queen Elizabeth Hospital Woolwich',
-    startTime: minutes(120),
-    estimatedArrival: future(50),
-    status: 'active',
-    currentTemp: 8.6,
-    minSafeTemp: 2.0,
-    maxSafeTemp: 8.0,
-    riskScore: 0.74,
-    riskLevel: 'high',
-    remainingSafeMinutes: 6,
-    secondsOutsideRange: 210,
-    currentLocation: { lat: 51.481, lng: -0.016 },
-    destinationLocation: { lat: 51.4948, lng: 0.0601 },
-    temperatureHistory: seriesExcursion(45, 30, 9.2),
-    lastUpdated: minutes(0.6),
-    activeAlertId: 'ALERT-20240423-006',
-    incidentLog: incident('SHIP-20240423-006', [
-      { timestamp: minutes(10), eventType: 'excursionStart', detail: 'Temperature exceeded 8.0°C', tempAtEvent: 8.1 },
-      { timestamp: minutes(8), eventType: 'alertTriggered', detail: 'HIGH alert dispatched to rider' },
-    ]),
-  },
+  // Mock Jake (SHIP-20240423-006) removed — the live ESP32 carrier
+  // (SHIP-DEV-0001 from AWS) is now the sole "Jake Fletcher" on the
+  // dashboard, overlaid by liveOverlay.ts. The seven shipments
+  // surrounding him here animate via mockGet's jitter() so the fleet
+  // looks busy at exhibition while the real device sits still indoors.
   {
     id: 'SHIP-20240423-007',
     deviceId: 'THING-ESP32-007',
@@ -659,26 +637,8 @@ export const mockAlerts: Alert[] = [
     status: 'active',
     dosesAtRisk: 1840,
   },
-  {
-    id: 'ALERT-20240423-006',
-    shipmentId: 'SHIP-20240423-006',
-    riderName: 'Jake Fletcher',
-    batchIds: ['YFV-2024-UK-0008'],
-    timestamp: minutes(8),
-    riskLevel: 'high',
-    riskScore: 0.74,
-    tempAtTrigger: 8.4,
-    remainingSafeMinutes: 6,
-    recommendedCentre: {
-      ...mockStorageCentres[2],
-      distanceKm: 4.2,
-      estimatedMinutes: 9,
-    },
-    riderResponse: 'accepted',
-    riderResponseTime: 38,
-    status: 'active',
-    dosesAtRisk: 300,
-  },
+  // ALERT-20240423-006 removed alongside the mock Jake shipment. Live
+  // alerts targeting SHIP-DEV-0001 come in via the liveOverlay layer.
   {
     id: 'ALERT-20240422-112',
     shipmentId: 'SHIP-20240422-041',
