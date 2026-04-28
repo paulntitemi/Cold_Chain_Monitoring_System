@@ -47,7 +47,6 @@ export function TopBar() {
         className="flex items-center gap-1.5 rounded-sm border border-amber/40 bg-amber/10 px-2.5 py-1 text-[11px] font-mono uppercase tracking-wider text-amber hover:bg-amber/20 hover:border-amber/60 transition-colors"
         title="Open Grafana analytics dashboard in a new tab"
       >
-        <span aria-hidden>📊</span>
         Analytics
         <span className="text-amber/60" aria-hidden>↗</span>
       </a>
