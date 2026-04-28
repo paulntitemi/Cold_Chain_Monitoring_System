@@ -329,14 +329,24 @@ def _start_shipment(shipment_id, _body):
 
 
 def _ping_shipment(shipment_id, body):
+    """Rider phone heartbeat. The ESP32 carrier is now the authoritative
+    GPS source — the phone's geolocation is only used as a "rider is alive"
+    signal and to power navigation in the PWA. We deliberately do NOT
+    overwrite `currentLocation` here, because doing so would compete with
+    the device telemetry written by telemetry_ingest.
+
+    For shipments that don't have a paired device (legacy/manual flows),
+    the location can still be tracked — see `riderPhoneLocation` below."""
     lat = _float(body.get("lat"))
     lng = _float(body.get("lng"))
     if lat is None or lng is None:
         return _response(400, {"error": "lat + lng required"})
     now = _utc_now_iso()
+    # Stash phone position in a separate field so it's available for
+    # debugging without poisoning the rendered map marker.
     _shipments.update_item(
         Key={"id": shipment_id},
-        UpdateExpression="SET currentLocation = :l, lastUpdated = :t",
+        UpdateExpression="SET riderPhoneLocation = :l, lastUpdated = :t",
         ExpressionAttributeValues={
             ":l": {"lat": Decimal(str(lat)), "lng": Decimal(str(lng))},
             ":t": now,
